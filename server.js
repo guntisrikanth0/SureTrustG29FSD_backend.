@@ -25,28 +25,26 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Define your allowed origins for both CORS and Socket.IO
+// Correct Origins for Render and Local Development
 const allowedOrigins = [
-  'http://51.20.85.41',  'http://localhost:5173', 'http://127.0.0.1:5173','https://suretrustg29fsd-frontend-nty8.onrender.com',// Your EC2 Public IP
-  // You can add your domain name here later if you get one
-  // 'http://www.yourdomain.com'
+  'http://localhost:5173', 
+  'http://127.0.0.1:5173',
+  'https://suretrustg29fsd-frontend-nty8.onrender.com',
+  'http://51.20.85.41'
 ];
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+// CORS Middleware
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
     }
-    return callback(null, true);
   },
   credentials: true,
-};
+}));
 
-app.use(cors(corsOptions));
 app.use(express.json());
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,11 +63,13 @@ app.use('/api/users', userRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/feedback", feedbackRoutes);
 
+// Create HTTP Server
 const server = http.createServer(app);
 
-// Pass the allowedOrigins to the socket initializer
+// Initialize Socket.io with the HTTP Server
 initSocket(server, allowedOrigins);
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+// LISTEN on server (NOT app) and bind to 0.0.0.0
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
