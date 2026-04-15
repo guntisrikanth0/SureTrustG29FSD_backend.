@@ -2,17 +2,21 @@ import { Server } from "socket.io";
 
 let io;
 
-export const initSocket = (server, allowedOrigins = "*") => {
+export const initSocket = (server, allowedOrigins) => {
+  // Use the passed array, or default to a safe value if empty
+  const origins = allowedOrigins && allowedOrigins.length > 0 ? allowedOrigins : "*";
+
   io = new Server(server, {
     cors: { 
-      origin: allowedOrigins,
+      origin: origins,
       methods: ["GET", "POST"],
       credentials: true,
     },
-    // Required for stability on hosting providers like Render
+    // Best practices for Render/Cloud hosting
+    transports: ["websocket", "polling"], 
     allowEIO3: true, 
-    transports: ["polling", "websocket"], 
     pingTimeout: 60000,
+    pingInterval: 25000,
   });
 
   io.on("connection", (socket) => {
